@@ -1,0 +1,8 @@
+main: xyz.czarekpawluczuk.cages.CagesPlugin
+author: Cezary Pawluczuk
+website: github.com/czarru
+name: CageEventPlugin
+version: 1.0
+commands:
+  event:
+    aliases: [wydarzenie]
