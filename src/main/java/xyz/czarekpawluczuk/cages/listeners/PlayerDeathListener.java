@@ -21,15 +21,11 @@ public class PlayerDeathListener implements Listener {
         Player player = e.getEntity().getPlayer();
         Player killer = player.getKiller();
         e.setDeathMessage(null);
-        if(killer instanceof Player
-                && player instanceof Player){
-
-        }
-        if(killer==null){
-            Bukkit.broadcastMessage(chatHelper.color("&cGracz &7"+player.getName()+" &czginął z nieznanych przyczyn!"));
-        }
+        if(killer==null)return;
         if(plugin.events.size()>0){
             Event event = plugin.events.get(0);
+            event.getCurrent().remove(player);
+            event.getCurrent().remove(killer);
             if(event.getStatus().equals(EventStatus.INGAME)){
                 e.getDrops().clear();
                 player.setHealth(20.0);
@@ -47,7 +43,7 @@ public class PlayerDeathListener implements Listener {
                 }, 10l);
                 event.setRound(event.getRound()+1);
                 event.setPlayers(event.getPlayers()-1);
-                event.nextRound(killer, player);
+                event.nextRound(killer);
             }
         }
     }

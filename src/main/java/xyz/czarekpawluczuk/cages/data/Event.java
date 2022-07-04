@@ -41,7 +41,7 @@ public class Event {
         this.owner = owner;
         this.players = 0;
         this.round = 0;
-        this.secondsToStart = 60;
+        this.secondsToStart = 20;
         this.waitingRoomLocation = new Location(Bukkit.getWorld("world"), 1374.5, 16.0, -44.5);
         this.firstPosition = new Location(Bukkit.getWorld("world"), 1374.5, 4.0, -65.5);
         this.secondPosition = new Location(Bukkit.getWorld("world"), 1374.5, 4.0, -23.5, 180f, 0f);
@@ -89,8 +89,8 @@ public class Event {
                         Bukkit.getScheduler().runTaskLater(plugin, () -> {
                             Player firstPlayer = waiting.get(0);
                             Player secondPlayer = waiting.get(1);
-                            waiting.add(firstPlayer);
-                            waiting.add(secondPlayer);
+                            waiting.remove(firstPlayer);
+                            waiting.remove(secondPlayer);
                             current.add(firstPlayer);
                             current.add(secondPlayer);
                             giveItems(firstPlayer, secondPlayer);
@@ -133,25 +133,35 @@ public class Event {
         }
     }
 
-    public void nextRound(Player winner, Player loser){
+    public void nextRound(Player winner){
         if(getPlayers()>1){
             winners.add(winner);
             if(getWaiting().size()<=1){
-                current.remove(loser);
-                current.remove(winner);
+                winner.teleport(getWaitingRoomLocation());
                 waiting.addAll(winners);
-                Player firstPlayer = waiting.get(0);
-                Player secondPlayer = waiting.get(1);
-                giveItems(firstPlayer, secondPlayer);
+                winners.clear();
+                current.add(waiting.get(0));
+                current.add(waiting.get(1));
+                waiting.remove(current.get(0));
+                waiting.remove(current.get(1));
+                Player firstPlayer = current.get(0);
+                Player secondPlayer = current.get(1);
+
+                Bukkit.getScheduler().runTaskLater(plugin, () -> giveItems(firstPlayer, secondPlayer), 30l);
+                Bukkit.broadcastMessage("test1");
             }else{
                 Player firstPlayer = waiting.get(0);
                 Player secondPlayer = waiting.get(1);
-                giveItems(firstPlayer, secondPlayer);
-                current.add(firstPlayer);
-                current.add(secondPlayer);
                 waiting.remove(firstPlayer);
                 waiting.remove(secondPlayer);
+                current.add(firstPlayer);
+                current.add(secondPlayer);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> giveItems(firstPlayer, secondPlayer), 30l);
+                Bukkit.broadcastMessage("test2");
             }
+            Bukkit.broadcastMessage("waiting: "+getWaiting());
+            Bukkit.broadcastMessage("current: "+getCurrent());
+            Bukkit.broadcastMessage("winners: "+getWinners());
         }else{
             Bukkit.broadcastMessage(chatHelper.color(" "));
             Bukkit.broadcastMessage(chatHelper.color("             &8» &d&lCageEventPlugin &8«"));
@@ -165,6 +175,10 @@ public class Event {
             Bukkit.getOnlinePlayers().forEach(onlinePlayers -> {
                 chatHelper.sendTitleMessage(onlinePlayers, "&a&lTurniej wygrał/a", "&f"+winner.getName());
             });
+            setStatus(EventStatus.AWAY);
+            current.clear();
+            waiting.clear();
+            winners.clear();
             plugin.events.remove(this);
         }
     }
