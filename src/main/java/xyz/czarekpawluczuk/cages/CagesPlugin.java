@@ -1,5 +1,7 @@
 package xyz.czarekpawluczuk.cages;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.plugin.java.JavaPlugin;
 import xyz.czarekpawluczuk.cages.commands.EventCommand;
 import xyz.czarekpawluczuk.cages.data.Event;
@@ -11,6 +13,11 @@ import java.util.ArrayList;
 public class CagesPlugin extends JavaPlugin {
 
     private static CagesPlugin PLUGIN_INSTANCE;
+
+
+    @Getter @Setter
+    public Event event = null;
+
     public ArrayList<Event> events = new ArrayList<>();
 
     public static CagesPlugin getPluginInstance() {

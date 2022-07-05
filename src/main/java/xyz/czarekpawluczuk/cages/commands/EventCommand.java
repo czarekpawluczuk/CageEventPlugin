@@ -9,10 +9,12 @@ import xyz.czarekpawluczuk.cages.CagesPlugin;
 import xyz.czarekpawluczuk.cages.data.Event;
 import xyz.czarekpawluczuk.cages.enums.EventStatus;
 import xyz.czarekpawluczuk.cages.helpers.ChatHelper;
+import xyz.czarekpawluczuk.cages.inventories.CageSettingsInventory;
 
 public class EventCommand implements CommandExecutor {
 
     private ChatHelper chatHelper = new ChatHelper();
+    private CageSettingsInventory cageInventory = new CageSettingsInventory();
     private CagesPlugin plugin = CagesPlugin.getPluginInstance();
 
     @Override
@@ -27,18 +29,19 @@ public class EventCommand implements CommandExecutor {
             return true;
         }
         if(args[0].equalsIgnoreCase("start")){
-            if(!player.hasPermission("cageeventplugin-command")){
+            if(!player.hasPermission("cageeventplugin-admin")){
                 player.sendMessage(chatHelper.color("&cBrak uprawnień do użycia tej komendy!"));
                 return true;
             }
-            if(plugin.events.size()>0) {
+            if(plugin.eventIsActive()) {
                 player.sendMessage(chatHelper.color("Event jest już aktywny!"));
                 return true;
             }
             Event event = new Event(player.getName());
+            plugin.setEvent(event);//TODO WAŻNE, TU MA BYC ZAMIAST TEJ ARRAYLISTY NA KTOREA WKLEPYWANY JEST EVENT TO PRZYPISUJE GO DO ZMIENNEJ W KLASIE GLOWNEJ
             event.startGame();
         }else if(args[0].equalsIgnoreCase("join")){
-            if(plugin.events.size()==0){
+            if(!plugin.eventIsActive()){
                 player.sendMessage(chatHelper.color("Event nie jest aktywny!"));
                 return true;
             }
@@ -54,6 +57,12 @@ public class EventCommand implements CommandExecutor {
                 return true;
             }
             event.joinTheGame(player);
+        }else if(args[0].equalsIgnoreCase("settings")) {
+            if(!player.hasPermission("cageeventplugin-admin")){
+                player.sendMessage(chatHelper.color("&cBrak uprawnień do użycia tej komendy!"));
+                return true;
+            }
+            cageInventory.open(player);
         }else{
             correctUsage(player);
         }
@@ -62,6 +71,9 @@ public class EventCommand implements CommandExecutor {
 
     public void correctUsage(Player player){
         player.sendMessage(chatHelper.color("/event join"));
-        player.sendMessage(chatHelper.color("/event start"));
+        if(player.hasPermission("cageeventplugin-admin")) {
+            player.sendMessage(chatHelper.color("&c/event start"));
+            player.sendMessage(chatHelper.color("&c/event settings"));
+        }
     }
 }
