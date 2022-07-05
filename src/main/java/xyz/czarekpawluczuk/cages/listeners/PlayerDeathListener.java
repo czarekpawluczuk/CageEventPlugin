@@ -21,11 +21,12 @@ public class PlayerDeathListener implements Listener {
         Player player = e.getEntity().getPlayer();
         Player killer = player.getKiller();
         e.setDeathMessage(null);
-        if(killer==null)return;
-        if(plugin.events.size()>0){
-            Event event = plugin.events.get(0);
+        if(killer==null||!(killer instanceof Player))return;
+        if(plugin.eventIsActive()){
+            Event event = plugin.getEvent();
             event.getCurrent().remove(player);
             event.getCurrent().remove(killer);
+
             if(event.getStatus().equals(EventStatus.INGAME)){
                 e.getDrops().clear();
                 player.setHealth(20.0);

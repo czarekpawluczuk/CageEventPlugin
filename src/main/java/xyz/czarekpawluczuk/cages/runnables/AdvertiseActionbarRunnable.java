@@ -16,7 +16,7 @@ public class AdvertiseActionbarRunnable implements Runnable {
 
     @Override
     public void run() {
-        if(plugin.events.size()==0){
+        if(!plugin.eventIsActive()){
             if (x == 0) {
                 finalAdvertiseMessage = "&8| &cEvent nie jest aktywny &8|";
             }else if(x==1) {
@@ -56,7 +56,7 @@ public class AdvertiseActionbarRunnable implements Runnable {
             x++;
             Bukkit.getOnlinePlayers().forEach(onlinePlayers->{chatHelper.sendActionbarMessage(onlinePlayers, finalAdvertiseMessage);});
         }else{
-            Event event = plugin.events.get(0);
+            Event event = plugin.getEvent();
             if(event.getStatus().equals(EventStatus.AWAY)){
                 if (x == 0) {
                     finalAdvertiseMessage = "&8| &cEvent nie jest aktywny &8|";

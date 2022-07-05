@@ -22,7 +22,7 @@ public class PlayerJoinListener implements Listener {
             player.sendMessage(chatHelper.color("&8•» &d&lCageEventPlugin &8» &fKorzystasz z aktualnej wersji pluginu!"));
         }
         if(plugin.eventIsActive()) {
-            Event event = plugin.events.get(0);
+            Event event = plugin.getEvent();
             player.teleport(event.getWaitingRoomLocation());
         }
     }

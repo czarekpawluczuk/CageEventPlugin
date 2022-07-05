@@ -19,8 +19,8 @@ public class PlayerQuitListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void playerQuit(PlayerQuitEvent e){
         Player player = e.getPlayer();
-        if(plugin.events.size()>0){
-            Event event = plugin.events.get(0);
+        if(plugin.eventIsActive()){
+            Event event = plugin.getEvent();
             if((event.getStatus().equals(EventStatus.INGAME) || event.getStatus().equals(EventStatus.WAITING))
                     && (event.getWaiting().contains(player)
                     || event.getCurrent().contains(player)

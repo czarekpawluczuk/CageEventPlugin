@@ -18,8 +18,8 @@ public class EntityByEntityDamageListener implements Listener {
     public void entityDamageByEntity(EntityDamageByEntityEvent e){
         if(e.getEntity() instanceof Player) {
             Player player = (Player) e.getEntity();
-            if (plugin.events.size() > 0) {
-                Event event = plugin.events.get(0);
+            if (plugin.eventIsActive()) {
+                Event event = plugin.getEvent();
                 if (event.getStatus().equals(EventStatus.INGAME) && event.getCurrent().contains(player)) return;
             }
             e.setCancelled(true);

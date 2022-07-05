@@ -6,11 +6,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
 import xyz.czarekpawluczuk.cages.CagesPlugin;
 import xyz.czarekpawluczuk.cages.enums.EventStatus;
+import xyz.czarekpawluczuk.cages.enums.KitType;
 import xyz.czarekpawluczuk.cages.helpers.ChatHelper;
 import xyz.czarekpawluczuk.cages.helpers.builders.ItemBuilder;
 
@@ -29,6 +31,7 @@ public class Event {
     private int players;
     private int round;
     private int secondsToStart;
+    private KitType kitType;
     private Location waitingRoomLocation;
     private Location firstPosition;
     private Location secondPosition;
@@ -36,19 +39,20 @@ public class Event {
     private ArrayList<Player> current;
     private ArrayList<Player> waiting;
 
-    public Event(String owner){
-        this.status = EventStatus.WAITING;
-        this.owner = owner;
+    public Event(){
+        this.status = EventStatus.AWAY;
+        this.owner = null;
         this.players = 0;
         this.round = 0;
         this.secondsToStart = 20;
+        this.kitType = KitType.DEFAULT;
         this.waitingRoomLocation = new Location(Bukkit.getWorld("world"), 1374.5, 16.0, -44.5);
         this.firstPosition = new Location(Bukkit.getWorld("world"), 1374.5, 4.0, -65.5);
         this.secondPosition = new Location(Bukkit.getWorld("world"), 1374.5, 4.0, -23.5, 180f, 0f);
         this.winners = new ArrayList<>();
         this.current = new ArrayList<>();
         this.waiting = new ArrayList<>();
-        plugin.events.add(this);
+        plugin.setEvent(this);
     }
 
 
@@ -80,7 +84,6 @@ public class Event {
                 }else{
                     Bukkit.broadcastMessage(chatHelper.color(" "));
                     if(getPlayers()>=2) {
-                        setStatus(EventStatus.INGAME);
                         Bukkit.broadcastMessage(chatHelper.color("&8» &fZapisy na event &cWalki Gladiatorów &fzakończone!"));
                         Bukkit.broadcastMessage(chatHelper.color("&8» &fZapisało się &e&l" +getPlayers() + " graczy&f, a więc event"));
                         Bukkit.broadcastMessage(chatHelper.color("                    &2WYSTARTOWAŁ"));
@@ -93,6 +96,7 @@ public class Event {
                             waiting.remove(secondPlayer);
                             current.add(firstPlayer);
                             current.add(secondPlayer);
+                            setStatus(EventStatus.INGAME);
                             giveItems(firstPlayer, secondPlayer);
                             Bukkit.getOnlinePlayers().forEach(onlinePlayers -> {chatHelper.sendTitleMessage(onlinePlayers, "&c&lPierwsza walka!", "&f"+firstPlayer.getName()+" &4VS &f"+secondPlayer.getName());});
                         }, 40l);
@@ -101,7 +105,7 @@ public class Event {
                         Bukkit.broadcastMessage(chatHelper.color("&8» &fZapisy na event &cWalki Gladiatorów &fzakończone!"));
                         Bukkit.broadcastMessage(chatHelper.color("&8» &fZapisało się &e&l" + getPlayers() + " graczy&f, a więc event"));
                         Bukkit.broadcastMessage(chatHelper.color("                    &cNIE WYSTARTOWAŁ"));
-                        plugin.events.remove(this);
+                        plugin.setEvent(null);
                     }
                     Bukkit.broadcastMessage(chatHelper.color(" "));
                     cancel();
@@ -137,18 +141,16 @@ public class Event {
         if(getPlayers()>1){
             winners.add(winner);
             if(getWaiting().size()<=1){
-                winner.teleport(getWaitingRoomLocation());
                 waiting.addAll(winners);
                 winners.clear();
                 current.add(waiting.get(0));
                 current.add(waiting.get(1));
                 waiting.remove(current.get(0));
                 waiting.remove(current.get(1));
+                winner.teleport(getWaitingRoomLocation());
                 Player firstPlayer = current.get(0);
                 Player secondPlayer = current.get(1);
-
                 Bukkit.getScheduler().runTaskLater(plugin, () -> giveItems(firstPlayer, secondPlayer), 30l);
-                Bukkit.broadcastMessage("test1");
             }else{
                 Player firstPlayer = waiting.get(0);
                 Player secondPlayer = waiting.get(1);
@@ -157,17 +159,14 @@ public class Event {
                 current.add(firstPlayer);
                 current.add(secondPlayer);
                 Bukkit.getScheduler().runTaskLater(plugin, () -> giveItems(firstPlayer, secondPlayer), 30l);
-                Bukkit.broadcastMessage("test2");
             }
-            Bukkit.broadcastMessage("waiting: "+getWaiting());
-            Bukkit.broadcastMessage("current: "+getCurrent());
-            Bukkit.broadcastMessage("winners: "+getWinners());
+            Bukkit.getOnlinePlayers().forEach(onlinePlayers -> {chatHelper.sendTitleMessage(onlinePlayers, "&c&lWalka!", "&f"+current.get(0).getName()+" &4VS &f"+current.get(1).getName());});
         }else{
             Bukkit.broadcastMessage(chatHelper.color(" "));
             Bukkit.broadcastMessage(chatHelper.color("             &8» &d&lCageEventPlugin &8«"));
             Bukkit.broadcastMessage(chatHelper.color(" "));
-            Bukkit.broadcastMessage(chatHelper.color("             &b&lMamy zwyzięzcę eventu!"));
-            Bukkit.broadcastMessage(chatHelper.color("    &8» &fGratulacje dla &2&l"+winner.getName()+" &8«"));
+            Bukkit.broadcastMessage(chatHelper.color("          &b&lMamy zwyzięzcę eventu!"));
+            Bukkit.broadcastMessage(chatHelper.color("      &8» &fGratulacje dla &2&l"+winner.getName()+" &8«"));
             Bukkit.broadcastMessage(chatHelper.color("    "));
             Bukkit.broadcastMessage(chatHelper.color("       &8• &fEvent trwał przez &e&l"+round+" rund &8•"));
             Bukkit.broadcastMessage(chatHelper.color("     &ePrzegranym życzymy powodzenia w następnym evencie!"));
@@ -175,30 +174,93 @@ public class Event {
             Bukkit.getOnlinePlayers().forEach(onlinePlayers -> {
                 chatHelper.sendTitleMessage(onlinePlayers, "&a&lTurniej wygrał/a", "&f"+winner.getName());
             });
+            winners.remove(winner);
+            current.remove(winner);
             setStatus(EventStatus.AWAY);
+            setSecondsToStart(20);
+            setPlayers(0);
+            setRound(0);
+            Bukkit.broadcastMessage("waiting: "+getWaiting());
+            Bukkit.broadcastMessage("current: "+getCurrent());
+            Bukkit.broadcastMessage("winners: "+getWinners());
             current.clear();
             waiting.clear();
             winners.clear();
-            plugin.events.remove(this);
         }
     }
 
     public void giveItems(Player firstPlayer, Player secondPlayer){
-        ItemBuilder helmet = new ItemBuilder(Material.DIAMOND_HELMET)
-                .setTitle("&d&lCageEventPlugin")
-                .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
-        ItemBuilder chestplate = new ItemBuilder(Material.DIAMOND_CHESTPLATE)
-                .setTitle("&d&lCageEventPlugin")
-                .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
-        ItemBuilder leggings = new ItemBuilder(Material.DIAMOND_LEGGINGS)
-                .setTitle("&d&lCageEventPlugin")
-                .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
-        ItemBuilder boots = new ItemBuilder(Material.DIAMOND_BOOTS)
-                .setTitle("&d&lCageEventPlugin")
-                .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
-        ItemBuilder sword = new ItemBuilder(Material.IRON_SWORD)
-                .setTitle("&d&lCageEventPlugin")
-                .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+        ItemBuilder helmet = null;
+        ItemBuilder chestplate = null;
+        ItemBuilder leggings = null;
+        ItemBuilder boots = null;
+        ItemBuilder sword = null;
+
+        ItemBuilder potion = null;
+
+        Event event = plugin.getEvent();
+        if(event.getKitType().equals(KitType.DEFAULT)) {
+            helmet = new ItemBuilder(Material.DIAMOND_HELMET)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+            chestplate = new ItemBuilder(Material.DIAMOND_CHESTPLATE)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+            leggings = new ItemBuilder(Material.DIAMOND_LEGGINGS)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+            boots = new ItemBuilder(Material.DIAMOND_BOOTS)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+            sword = new ItemBuilder(Material.IRON_SWORD)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+        }else if(event.getKitType().equals(KitType.POTION)){
+            helmet = new ItemBuilder(Material.DIAMOND_HELMET)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addEnchantment(Enchantment.DURABILITY, 3)
+                    .addEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 4)
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+            chestplate = new ItemBuilder(Material.DIAMOND_CHESTPLATE)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addEnchantment(Enchantment.DURABILITY, 3)
+                    .addEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 4)
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+            leggings = new ItemBuilder(Material.DIAMOND_LEGGINGS)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addEnchantment(Enchantment.DURABILITY, 3)
+                    .addEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 4)
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+            boots = new ItemBuilder(Material.DIAMOND_BOOTS)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addEnchantment(Enchantment.DURABILITY, 3)
+                    .addEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 4)
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+            sword = new ItemBuilder(Material.DIAMOND_SWORD)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addEnchantment(Enchantment.DAMAGE_ALL, 5)
+                    .addEnchantment(Enchantment.FIRE_ASPECT, 2)
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+            potion = new ItemBuilder(Material.POTION, 1, (short) 16453)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+        }else if(event.getKitType().equals(KitType.IRON)){
+            helmet = new ItemBuilder(Material.IRON_HELMET)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+            chestplate = new ItemBuilder(Material.IRON_CHESTPLATE)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+            leggings = new ItemBuilder(Material.IRON_LEGGINGS)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+            boots = new ItemBuilder(Material.IRON_BOOTS)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+            sword = new ItemBuilder(Material.IRON_SWORD)
+                    .setTitle("&d&lCageEventPlugin")
+                    .addLore(chatHelper.color("&7Author: &fCzarek Pawluczuk"));
+        }
         firstPlayer.getInventory().clear();
         firstPlayer.getInventory().setHelmet(helmet.build());
         firstPlayer.getInventory().setChestplate(chestplate.build());
@@ -213,12 +275,15 @@ public class Event {
 
         firstPlayer.getInventory().setHeldItemSlot(0);
         firstPlayer.getInventory().setItem(0, sword.build());
+        if(potion!=null) {
+            firstPlayer.getInventory().addItem(potion.build());
+        }
         secondPlayer.getInventory().setHeldItemSlot(0);
         secondPlayer.getInventory().setItem(0, sword.build());
-
+        if(potion!=null) {
+            secondPlayer.getInventory().addItem(potion.build());
+        }
         firstPlayer.teleport(getFirstPosition());
         secondPlayer.teleport(getSecondPosition());
-
-
     }
 }

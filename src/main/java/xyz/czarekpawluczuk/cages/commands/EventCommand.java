@@ -37,15 +37,15 @@ public class EventCommand implements CommandExecutor {
                 player.sendMessage(chatHelper.color("Event jest już aktywny!"));
                 return true;
             }
-            Event event = new Event(player.getName());
-            plugin.setEvent(event);//TODO WAŻNE, TU MA BYC ZAMIAST TEJ ARRAYLISTY NA KTOREA WKLEPYWANY JEST EVENT TO PRZYPISUJE GO DO ZMIENNEJ W KLASIE GLOWNEJ
+            Event event = plugin.getEvent();
+            event.setOwner(player.getName());
             event.startGame();
         }else if(args[0].equalsIgnoreCase("join")){
             if(!plugin.eventIsActive()){
                 player.sendMessage(chatHelper.color("Event nie jest aktywny!"));
                 return true;
             }
-            Event event = plugin.events.get(0);
+            Event event = plugin.getEvent();
             if(event.getWaiting().contains(player)
                     ||event.getCurrent().contains(player)
                     ||event.getWinners().contains(player)){
@@ -62,7 +62,10 @@ public class EventCommand implements CommandExecutor {
                 player.sendMessage(chatHelper.color("&cBrak uprawnień do użycia tej komendy!"));
                 return true;
             }
-            cageInventory.open(player);
+            cageInventory.openMain(player);
+        }else if(args[0].equalsIgnoreCase("kit")) {
+            Event event = plugin.getEvent();
+            player.sendMessage("obecny kit="+event.getKitType());
         }else{
             correctUsage(player);
         }
